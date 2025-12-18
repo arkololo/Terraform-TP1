@@ -1,0 +1,14 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - ansible
+  - python3-pip
+  - git
+
+runcmd:
+  - pip3 install --upgrade ansible
+  - ansible --version
+
+final_message: "Ansible VM ready."

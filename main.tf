@@ -123,3 +123,46 @@ output "front_instance" {
 output "back_instance" {
   value = incus_instance.back.name
 }
+
+########################
+# ANSIBLE VM (UBUNTU)
+########################
+resource "incus_instance" "ansible" {
+  name     = "Ansible-Host"
+  remote   = "iaas"
+  type     = "virtual-machine"
+  project  = var.project
+  image    = "images:ubuntu/jammy/cloud"
+  profiles = ["default"]
+
+  config = {
+    "limits.cpu"          = "1"
+    "limits.memory"       = "512MB"
+    "security.secureboot" = "false"
+    "user.user-data"      = file("${path.module}/cloud-init-ansible.yaml")
+  }
+
+  device {
+    name = "root"
+    type = "disk"
+    properties = {
+      path = "/"
+      pool = var.storage_pool
+      size = "10GB"
+    }
+  }
+
+  device {
+    name = "eth0"
+    type = "nic"
+    properties = {
+      network = incus_network.dedicated.name
+    }
+  }
+
+  depends_on = [incus_network.dedicated]
+}
+
+output "ansible_instance" {
+  value = incus_instance.ansible.name
+}
