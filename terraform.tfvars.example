@@ -1,3 +1,14 @@
+## Example: Provide your SSH keypair used between Ansible and WEB
+# Replace with your actual keys. Keep PEM format for private key.
+
+ansible_ssh_private_key = <<EOF
+-----BEGIN RSA PRIVATE KEY-----
+...your private key PEM...
+-----END RSA PRIVATE KEY-----
+EOF
+
+ansible_ssh_public_key  = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAA... your_comment"
+
 # --- Project & Storage ---
 project      = "default"
 storage_pool = "default"

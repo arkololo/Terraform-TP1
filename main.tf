@@ -86,6 +86,7 @@ resource "incus_instance" "back" {
     "limits.cpu"    = tostring(var.back_cpu)
     "limits.memory" = var.back_memory
     "security.secureboot" = "false"
+    "user.user-data"            = file("${path.module}/cloud-init-ssh-debian.yaml")
   }
 
   device {
@@ -128,7 +129,7 @@ output "back_instance" {
 # ANSIBLE VM (UBUNTU)
 ########################
 resource "incus_instance" "ansible" {
-  name     = "Ansible-Host"
+  name     = "Ansible"
   remote   = "iaas"
   type     = "virtual-machine"
   project  = var.project
@@ -137,9 +138,15 @@ resource "incus_instance" "ansible" {
 
   config = {
     "limits.cpu"          = "1"
-    "limits.memory"       = "512MB"
+    "limits.memory"       = "1GB"
     "security.secureboot" = "false"
-    "user.user-data"      = file("${path.module}/cloud-init-ansible.yaml")
+    "cloud-init.user-data"      = templatefile(
+      "${path.module}/cloud-init-ansible.yaml",
+      {
+        private_key = var.ansible_ssh_private_key,
+        public_key  = var.ansible_ssh_public_key
+      }
+    )
   }
 
   device {
@@ -165,4 +172,58 @@ resource "incus_instance" "ansible" {
 
 output "ansible_instance" {
   value = incus_instance.ansible.name
+}
+
+########################
+# ANSIBLE → FRONT KEY PUSH
+########################
+ 
+
+########################
+# DEBIAN 13 PROTECTED VM
+########################
+resource "incus_instance" "WEB" {
+  name     = "WEB"
+  remote   = "iaas"
+  type     = "virtual-machine"
+  project  = var.project
+  image    = "images:debian/trixie/cloud"
+  profiles = ["default"]
+
+  config = {
+    "limits.cpu"                = "1"
+    "limits.memory"             = "1GB"
+    "security.secureboot"       = "false"
+    "security.protection.delete"= "true"
+    "user.user-data"            = templatefile(
+      "${path.module}/cloud-init-ssh-debian.yaml",
+      {
+        public_key = var.ansible_ssh_public_key
+      }
+    )
+  }
+
+  device {
+    name = "root"
+    type = "disk"
+    properties = {
+      path = "/"
+      pool = var.storage_pool
+      size = "10GB"
+    }
+  }
+
+  device {
+    name = "eth0"
+    type = "nic"
+    properties = {
+      network = incus_network.dedicated.name
+    }
+  }
+
+  depends_on = [incus_network.dedicated]
+}
+
+output "web_instance" {
+  value = incus_instance.WEB.name
 }

@@ -1,7 +1,7 @@
 variable "project" {
   description = "Incus project to use"
   type        = string
-  default     = "default"
+  default     = "HingeEnjoyer4Living2BetterYourself"
 }
 
 variable "storage_pool" {
@@ -35,4 +35,19 @@ variable "enable_lb" {
   description = "Whether to create the load balancer forward"
   type        = bool
   default     = false
+}
+
+# User-provided SSH keypair for Ansible ↔ WEB
+variable "ansible_ssh_private_key" {
+  description = "Private key (PEM) to install on Ansible VM"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "ansible_ssh_public_key" {
+  description = "Public key (OpenSSH format) to authorize on WEB VM"
+  type        = string
+  sensitive   = true
+  default     = ""
 }

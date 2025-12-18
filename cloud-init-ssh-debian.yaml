@@ -1,0 +1,23 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - openssh-server
+
+ssh_pwauth: false
+
+users:
+  - name: debian
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKONDBN/SoaXgJNFiEzqafh+ImYB7/rpE+yPL6NpF3i
+
+runcmd:
+  - mkdir -p /home/debian/.ssh && chmod 700 /home/debian/.ssh && chown -R debian:debian /home/debian/.ssh
+  - chmod 600 /home/debian/.ssh/authorized_keys && chown debian:debian /home/debian/.ssh/authorized_keys
+  - systemctl enable ssh
+  - systemctl restart ssh
+
+final_message: "SSH server ensured running on Debian 13."
