@@ -27,13 +27,13 @@ variable "remote" {
 variable "network_name" {
   description = "Name of OVN network to create"
   type        = string
-  default     = "Main"
+  default     = "terraform-net"
 }
 
 variable "network_subnet" {
   description = "Network subnet for VMs (IPv4 only)"
   type        = string
-  default     = "10.0.100.0/24"
+  default     = "10.0.100.1/24"
 }
 
 # ============================================================================

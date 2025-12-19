@@ -8,8 +8,8 @@
 project        = "HingeEnjoyer4Living2BetterYourself"
 storage_pool   = "local"
 remote         = "iaas"
-network_name   = "Main"
-network_subnet = "10.0.100.0/24"
+network_name   = "terraform-net"
+network_subnet = "10.0.100.1/24"
 
 # ============================================================================
 # Configuration VM Ansible
