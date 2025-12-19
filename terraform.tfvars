@@ -25,7 +25,7 @@ ansible_ip = "10.0.100.10"
 # Configuration VM Web
 # ============================================================================
 web_vm_name = "Web"
-web_os_image = "images:debian/12/cloud"
+web_os_image = "debian12-docker"
 web_cpu = 1
 web_memory = "2GB"
 web_disk = "32GB"
