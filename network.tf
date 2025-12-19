@@ -39,3 +39,24 @@ output "network_subnet" {
   description = "Network subnet (CIDR)"
   value       = var.network_subnet
 }
+
+# Network forward 10.3.0.67:80 -> Web VM 10.0.100.20:80
+resource "incus_network_forward" "http80" {
+  network = incus_network.main.name
+  remote  = var.remote
+  project = var.project
+
+  listen_address = "10.3.0.67"
+
+  ports = [
+    {
+      description    = "http80"
+      listen_port    = "80"
+      protocol       = "tcp"
+      target_address = var.web_ip
+      target_port    = "80"
+    }
+  ]
+
+  depends_on = [incus_network.main]
+}
