@@ -1,8 +1,4 @@
 # ============================================================================
-# VALEURS DES VARIABLES TERRAFORM
-# ============================================================================
-
-# ============================================================================
 # Configuration Infrastructure de base
 # ============================================================================
 project        = "HingeEnjoyer4Living2BetterYourself"
@@ -34,8 +30,6 @@ web_ip = "10.0.100.20"
 # ============================================================================
 # SSH & Clés Ansible
 # ============================================================================
-# Clé privée SSH ED25519 (pour accès Ansible VM)
-# ATTENTION: Clé d'exemple - À remplacer par votre clé sécurisée
 ansible_ssh_private_key = <<EOF
 -----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
@@ -46,8 +40,7 @@ AAAEAK1YhQhQ2PSJY5NT+SFIQmbs7GPly2zEQq9fz4crgRXWKONDBN/SoaXgJNFiEzqafh
 -----END OPENSSH PRIVATE KEY-----
 EOF
 
-# Clé publique SSH ED25519 (à ajouter dans authorized_keys de Web VM)
-# Format OpenSSH : "ssh-ed25519 AAAAC3... user@host"
+
 ansible_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKONDBN/SoaXgJNFiEzqafh+ImYB7/rpE+yPL6NpF3i"
 
 # ============================================================================

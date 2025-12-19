@@ -145,9 +145,7 @@ variable "github_repo_branch" {
   default     = "main"
 }
 
-# ============================================================================
-# Security & Protection
-# ============================================================================
+# Security
 
 variable "security_protection_delete" {
   description = "Whether to protect resources from deletion (true/false). Set to true for production."

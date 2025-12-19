@@ -47,7 +47,6 @@ services:
         define('WP_DEBUG', false);
         define('WP_MEMORY_LIMIT', '256M');
     volumes:
-      # Persister les fichiers WordPress
       - ./wordpress_data:/var/www/html
     ports:
       # Port 80 pour HTTP
@@ -91,9 +90,6 @@ networks:
   wordpress_network:
     driver: bridge
 
-# ============================================================================
-# Volumes (optionnel - déclaration explicite)
-# ============================================================================
 volumes:
   mysql_data:
   wordpress_data:

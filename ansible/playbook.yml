@@ -1,6 +1,5 @@
 ---
-# Playbook Ansible pour configurer WordPress sur VM Web
-# Exécutée automatiquement depuis VM Ansible
+
 # Actions :
 # 1. apt update
 # 2. Installer Docker
