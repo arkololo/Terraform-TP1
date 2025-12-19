@@ -2,7 +2,7 @@
 # Playbook Ansible pour configurer WordPress sur VM Web
 # Exécutée automatiquement depuis VM Ansible
 # Actions :
-# 1. apt update et apt upgrade
+# 1. apt update
 # 2. Installer Docker
 # 3. Installer Docker Compose
 # 4. Créer /opt/wordpress
@@ -27,26 +27,15 @@
       tags:
         - always
 
-    - name: Upgrade all packages to the latest version
-      apt:
-        upgrade: dist
-        allow_unauthenticated: yes
-      tags:
-        - upgrade
-
     - name: Install required packages
       apt:
         name:
-          - apt-transport-https
           - ca-certificates
           - curl
           - gnupg
           - lsb-release
-          - software-properties-common
           - python3-pip
-          - python3-venv
         state: present
-        allow_unauthenticated: yes
       tags:
         - packages
 
@@ -71,7 +60,6 @@
       apt:
         name: docker-ce
         state: present
-        allow_unauthenticated: yes
       tags:
         - docker
 
@@ -249,7 +237,7 @@
     # 7. Vérifier les services
     # ========================================================================
     - name: Get list of running containers
-      shell: docker ps --format "table {{.Names}}\t{{.Status}}"
+      shell: docker ps --format 'table {{ "{{.Names}}\t{{.Status}}" }}'
       register: running_containers
       tags:
         - verify
