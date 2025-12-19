@@ -57,7 +57,8 @@ resource "incus_instance" "ansible" {
     name = "eth0"
     type = "nic"
     properties = {
-      network = incus_network.main.name
+      network        = incus_network.main.name
+      "ipv4.address" = var.ansible_ip
     }
   }
 

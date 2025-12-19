@@ -53,7 +53,8 @@ resource "incus_instance" "web" {
     name = "eth0"
     type = "nic"
     properties = {
-      network = incus_network.main.name
+      network        = incus_network.main.name
+      "ipv4.address" = var.web_ip
     }
   }
 
