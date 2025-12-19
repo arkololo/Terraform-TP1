@@ -84,8 +84,11 @@ runcmd:
   # 9. Attendre que la VM Web soit accessible
   - sleep 30
 
+  # 9bis. Attendre que SSH réponde sur la VM Web
+  - sudo -u ubuntu ansible -i /home/ubuntu/ansible-repo/ansible/inventory.ini web_server -m wait_for_connection -a "timeout=180 connect_timeout=5 sleep=5" || true
+
   # 10. Lancer ansible-playbook automatiquement
-  - sudo -u ubuntu /usr/bin/ansible-playbook /home/ubuntu/ansible-repo/playbook.yml -i /home/ubuntu/ansible-repo/inventory.ini 2>&1 | tee /tmp/ansible-playbook.log &
+  - sudo -u ubuntu /usr/bin/ansible-playbook /home/ubuntu/ansible-repo/ansible/playbook.yml -i /home/ubuntu/ansible-repo/ansible/inventory.ini 2>&1 | tee /tmp/ansible-playbook.log &
 
 # Logging
 output:

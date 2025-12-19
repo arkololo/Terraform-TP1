@@ -54,7 +54,7 @@ ansible_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKONDBN/SoaXgJNFi
 # Configuration GitHub & Ansible
 # ============================================================================
 # URL du dépôt GitHub contenant playbooks et inventory Ansible
-github_repo_url = "https://github.com/arkololo/ansible-wordpress.git"
+github_repo_url = "https://github.com/arkololo/Terraform-TP1.git"
 github_repo_branch = "main"
 
 # ============================================================================
