@@ -1,0 +1,67 @@
+#cloud-config
+# Cloud-init pour VM Web (Debian 12)
+# Actions :
+# 1. Mettre à jour le système
+# 2. Installer openssh-server
+# 3. Configurer SSH
+# 4. Ajouter clé publique Ansible dans authorized_keys
+# Note: Docker + WordPress seront installés par Ansible playbook
+
+hostname: web
+fqdn: web.local
+
+# Mettre à jour les packages
+package_update: true
+package_upgrade: true
+
+# Installer les paquets nécessaires (basique pour Debian)
+packages:
+  - openssh-server
+  - openssh-client
+  - curl
+  - wget
+  - ca-certificates
+  - apt-transport-https
+
+# Créer l'utilisateur debian avec accès SSH Ansible
+users:
+  - name: debian
+    gecos: Debian User
+    groups: [sudo, docker]
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${authorized_keys}
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    lock_passwd: true
+
+# Configuration SSH
+ssh_enabled: true
+ssh_port: 22
+
+# Scripts d'exécution
+runcmd:
+  # 1. Attendre la stabilisation du système
+  - sleep 10
+
+  # 2. Créer le groupe docker (préparation pour Ansible)
+  - groupadd -f docker || true
+
+  # 3. Ajouter debian au groupe docker
+  - usermod -aG docker debian || true
+
+  # 4. Fixer les permissions SSH
+  - chmod 700 /home/debian/.ssh || true
+  - chmod 600 /home/debian/.ssh/authorized_keys || true
+  - chown -R debian:debian /home/debian/.ssh || true
+
+  # 5. Activer SSH
+  - systemctl enable ssh
+  - systemctl start ssh
+  - systemctl restart ssh
+
+  # 6. Vérifier que SSH est actif
+  - sleep 5 && ss -tlnp | grep 22 || echo "SSH setup complete"
+
+# Logging
+output:
+  all: '| tee -a /var/log/cloud-init-output.log'

@@ -1,5 +1,41 @@
+# Terraform Files
 .terraform/
+.terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
+*.tfstate.*.backup
 crash.log
+
+# Local overrides
 *.tfvars.local
+override.tf.json
+override.tf
+
+# Logs
+*.log
+/tmp/
+/var/log/
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Security (don't commit sensitive keys)
+# !terraform.tfvars (only if you want to commit it)
+# local.key
+# *.pem
+# *.key
+
+# Build artifacts
+terraform.tfplan

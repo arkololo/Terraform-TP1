@@ -1,0 +1,99 @@
+version: '3.9'
+
+# Docker Compose pour WordPress + MySQL + phpMyAdmin
+# Utilisé par Ansible pour configurer le stack sur la VM Web
+
+services:
+  # =========================================================================
+  # MySQL Database Service
+  # =========================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: wordpress_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-wordpress_root_pass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
+      MYSQL_USER: ${MYSQL_USER:-wordpress}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-wordpress_pass}
+    volumes:
+      # Persister les données MySQL
+      - ./mysql_data:/var/lib/mysql
+    networks:
+      - wordpress_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    restart: unless-stopped
+    labels:
+      - "com.example.description=WordPress MySQL Database"
+
+  # =========================================================================
+  # WordPress Application Service
+  # =========================================================================
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress_app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE:-wordpress}
+      WORDPRESS_DB_USER: ${MYSQL_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD:-wordpress_pass}
+      WORDPRESS_TABLE_PREFIX: wp_
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_DEBUG', false);
+        define('WP_MEMORY_LIMIT', '256M');
+    volumes:
+      # Persister les fichiers WordPress
+      - ./wordpress_data:/var/www/html
+    ports:
+      # Port 80 pour HTTP
+      - "80:80"
+    networks:
+      - wordpress_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      timeout: 20s
+      retries: 10
+    restart: unless-stopped
+    labels:
+      - "com.example.description=WordPress Application"
+
+  # =========================================================================
+  # phpMyAdmin Service (Database Management)
+  # =========================================================================
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: wordpress_phpmyadmin
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: ${MYSQL_USER:-wordpress}
+      PMA_PASSWORD: ${MYSQL_PASSWORD:-wordpress_pass}
+      PMA_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-wordpress_root_pass}
+    ports:
+      # Port 8080 pour phpMyAdmin
+      - "8080:80"
+    networks:
+      - wordpress_network
+    restart: unless-stopped
+    labels:
+      - "com.example.description=phpMyAdmin Database Management"
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  wordpress_network:
+    driver: bridge
+
+# ============================================================================
+# Volumes (optionnel - déclaration explicite)
+# ============================================================================
+volumes:
+  mysql_data:
+  wordpress_data:

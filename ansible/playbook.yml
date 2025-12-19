@@ -1,0 +1,307 @@
+---
+# Playbook Ansible pour configurer WordPress sur VM Web
+# Exécutée automatiquement depuis VM Ansible
+# Actions :
+# 1. apt update et apt upgrade
+# 2. Installer Docker
+# 3. Installer Docker Compose
+# 4. Créer /opt/wordpress
+# 5. Déployer docker-compose.yml
+# 6. Lancer les conteneurs
+# 7. Vérifier que les services sont actifs
+
+- name: Configure WordPress with Docker on Web VM
+  hosts: webservers
+  become: yes
+  become_user: root
+  gather_facts: yes
+
+  tasks:
+    # ========================================================================
+    # 1. Système & Packages de base
+    # ========================================================================
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      tags:
+        - always
+
+    - name: Upgrade all packages to the latest version
+      apt:
+        upgrade: dist
+        allow_unauthenticated: yes
+      tags:
+        - upgrade
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - software-properties-common
+          - python3-pip
+          - python3-venv
+        state: present
+        allow_unauthenticated: yes
+      tags:
+        - packages
+
+    # ========================================================================
+    # 2. Installer Docker
+    # ========================================================================
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+      tags:
+        - docker
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+        state: present
+      tags:
+        - docker
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+        allow_unauthenticated: yes
+      tags:
+        - docker
+
+    - name: Enable Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+      tags:
+        - docker
+
+    # ========================================================================
+    # 3. Installer Docker Compose
+    # ========================================================================
+    - name: Install Docker Compose from GitHub
+      shell: |
+        curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+      args:
+        creates: /usr/local/bin/docker-compose
+      tags:
+        - docker-compose
+
+    - name: Create symbolic link for docker-compose
+      file:
+        src: /usr/local/bin/docker-compose
+        dest: /usr/bin/docker-compose
+        state: link
+      tags:
+        - docker-compose
+
+    - name: Verify Docker Compose installation
+      shell: docker-compose --version
+      register: docker_compose_version
+      tags:
+        - docker-compose
+
+    - name: Display Docker Compose version
+      debug:
+        msg: "Docker Compose version: {{ docker_compose_version.stdout }}"
+      tags:
+        - docker-compose
+
+    # ========================================================================
+    # 4. Créer le répertoire WordPress
+    # ========================================================================
+    - name: Create WordPress directory
+      file:
+        path: "{{ wordpress_root }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+      tags:
+        - wordpress
+
+    - name: Create WordPress data subdirectories
+      file:
+        path: "{{ wordpress_root }}/{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+      loop:
+        - wordpress_data
+        - mysql_data
+        - backups
+      tags:
+        - wordpress
+
+    # ========================================================================
+    # 5. Déployer docker-compose.yml
+    # ========================================================================
+    - name: Copy docker-compose.yml to Web VM
+      copy:
+        content: |
+          version: '3.9'
+
+          services:
+            mysql:
+              image: mysql:8.0
+              container_name: wordpress_mysql
+              environment:
+                MYSQL_ROOT_PASSWORD: "{{ mysql_root_password }}"
+                MYSQL_DATABASE: "{{ wordpress_db_name }}"
+                MYSQL_USER: "{{ wordpress_db_user }}"
+                MYSQL_PASSWORD: "{{ wordpress_db_password }}"
+              volumes:
+                - ./mysql_data:/var/lib/mysql
+              networks:
+                - wordpress_network
+              healthcheck:
+                test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+                timeout: 20s
+                retries: 10
+              restart: unless-stopped
+
+            wordpress:
+              image: wordpress:latest
+              container_name: wordpress_app
+              depends_on:
+                mysql:
+                  condition: service_healthy
+              environment:
+                WORDPRESS_DB_HOST: mysql:3306
+                WORDPRESS_DB_NAME: "{{ wordpress_db_name }}"
+                WORDPRESS_DB_USER: "{{ wordpress_db_user }}"
+                WORDPRESS_DB_PASSWORD: "{{ wordpress_db_password }}"
+                WORDPRESS_TABLE_PREFIX: "wp_"
+              volumes:
+                - ./wordpress_data:/var/www/html
+              ports:
+                - "80:80"
+              networks:
+                - wordpress_network
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost"]
+                timeout: 20s
+                retries: 10
+              restart: unless-stopped
+
+            phpmyadmin:
+              image: phpmyadmin:latest
+              container_name: wordpress_phpmyadmin
+              depends_on:
+                - mysql
+              environment:
+                PMA_HOST: mysql
+                PMA_USER: "{{ wordpress_db_user }}"
+                PMA_PASSWORD: "{{ wordpress_db_password }}"
+              ports:
+                - "8080:80"
+              networks:
+                - wordpress_network
+              restart: unless-stopped
+
+          networks:
+            wordpress_network:
+              driver: bridge
+
+        dest: "{{ wordpress_root }}/docker-compose.yml"
+        mode: '0644'
+        owner: root
+        group: root
+      tags:
+        - wordpress
+
+    # ========================================================================
+    # 6. Lancer Docker Compose
+    # ========================================================================
+    - name: Start WordPress stack with Docker Compose
+      shell: |
+        cd {{ wordpress_root }}
+        docker-compose up -d
+      register: docker_compose_result
+      tags:
+        - wordpress
+
+    - name: Display Docker Compose output
+      debug:
+        msg: "{{ docker_compose_result.stdout_lines }}"
+      tags:
+        - wordpress
+
+    - name: Wait for WordPress to be ready
+      shell: docker-compose -f {{ wordpress_root }}/docker-compose.yml ps
+      register: docker_ps_result
+      until: docker_ps_result.stdout.find("Up") != -1
+      retries: 20
+      delay: 5
+      tags:
+        - wordpress
+
+    # ========================================================================
+    # 7. Vérifier les services
+    # ========================================================================
+    - name: Get list of running containers
+      shell: docker ps --format "table {{.Names}}\t{{.Status}}"
+      register: running_containers
+      tags:
+        - verify
+
+    - name: Display running containers
+      debug:
+        msg: "{{ running_containers.stdout_lines }}"
+      tags:
+        - verify
+
+    - name: Check WordPress health
+      uri:
+        url: "http://localhost"
+        method: GET
+        status_code: 200
+        validate_certs: no
+      register: wordpress_check
+      retries: 10
+      delay: 5
+      tags:
+        - verify
+
+    - name: Display WordPress health check result
+      debug:
+        msg: "WordPress is responding with status: {{ wordpress_check.status }}"
+      tags:
+        - verify
+
+    # ========================================================================
+    # 8. Final Summary
+    # ========================================================================
+    - name: Create deployment summary
+      shell: |
+        echo "========================================" > /tmp/deployment_summary.txt
+        echo "WordPress Deployment Completed" >> /tmp/deployment_summary.txt
+        echo "========================================" >> /tmp/deployment_summary.txt
+        echo "WordPress URL: http://{{ ansible_host }}" >> /tmp/deployment_summary.txt
+        echo "Admin URL: http://{{ ansible_host }}/wp-admin" >> /tmp/deployment_summary.txt
+        echo "phpMyAdmin URL: http://{{ ansible_host }}:8080" >> /tmp/deployment_summary.txt
+        echo "" >> /tmp/deployment_summary.txt
+        echo "MySQL Root Password: {{ mysql_root_password }}" >> /tmp/deployment_summary.txt
+        echo "WordPress DB Name: {{ wordpress_db_name }}" >> /tmp/deployment_summary.txt
+        echo "WordPress DB User: {{ wordpress_db_user }}" >> /tmp/deployment_summary.txt
+        echo "" >> /tmp/deployment_summary.txt
+        docker ps >> /tmp/deployment_summary.txt
+        cat /tmp/deployment_summary.txt
+      register: summary
+      tags:
+        - verify
+
+    - name: Display deployment summary
+      debug:
+        msg: "{{ summary.stdout_lines }}"
+      tags:
+        - verify

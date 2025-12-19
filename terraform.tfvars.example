@@ -1,27 +1,94 @@
-## Example: Provide your SSH keypair used between Ansible and WEB
-# Replace with your actual keys. Keep PEM format for private key.
+# ============================================================================
+# EXEMPLE DE CONFIGURATION - terraform.tfvars.example
+# 
+# Copier ce fichier en terraform.tfvars et ajuster selon vos besoins
+# cp terraform.tfvars.example terraform.tfvars
+# ============================================================================
 
+# ============================================================================
+# Configuration Infrastructure de base
+# ============================================================================
+project        = "HingeEnjoyer4Living2BetterYourself"
+storage_pool   = "local"
+remote         = "iaas"
+network_name   = "Main"
+network_subnet = "10.0.100.0/24"
+
+# ============================================================================
+# Configuration VM Ansible
+# ============================================================================
+ansible_vm_name = "Ansible"
+ansible_os_image = "images:ubuntu/24.04/cloud"
+ansible_cpu = 1
+ansible_memory = "1GB"
+ansible_disk = "16GB"
+ansible_ip = "10.0.100.10"
+
+# ============================================================================
+# Configuration VM Web
+# ============================================================================
+web_vm_name = "Web"
+web_os_image = "images:debian/12/cloud"
+web_cpu = 1
+web_memory = "2GB"
+web_disk = "32GB"
+web_ip = "10.0.100.20"
+
+# ============================================================================
+# SSH & Clés Ansible
+# ============================================================================
+# Remplacer par votre clé SSH publique (format OpenSSH)
+# Générer : ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
+ansible_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKONDBN/SoaXgJNFiEzqafh+ImYB7/rpE+yPL6NpF3i user@host"
+
+# Remplacer par votre clé SSH privée (format PEM)
+# Contenu de ~/.ssh/id_ed25519
 ansible_ssh_private_key = <<EOF
------BEGIN RSA PRIVATE KEY-----
-...your private key PEM...
------END RSA PRIVATE KEY-----
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACBijjQwTf0qGl4CTRYhM6mn4fiJmAe/66RPsjy+jaRd4gAAAIjJCgV6yQoF
+egAAAAtzc2gtZWQyNTUxOQAAACBijjQwTf0qGl4CTRYhM6mn4fiJmAe/66RPsjy+jaRd4g
+AAAEAK1YhQhQ2PSJY5NT+SFIQmbs7GPly2zEQq9fz4crgRXWKONDBN/SoaXgJNFiEzqafh
++ImYB7/rpE+yPL6NpF3iAAAAAAECAwQF
+-----END OPENSSH PRIVATE KEY-----
 EOF
 
-ansible_ssh_public_key  = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAA... your_comment"
+# ============================================================================
+# Configuration GitHub & Ansible
+# ============================================================================
+# URL du dépôt GitHub contenant playbooks et inventory Ansible
+# Doit contenir : playbook.yml et inventory.ini dans la racine
+github_repo_url = "https://github.com/arkololo/ansible-wordpress.git"
+github_repo_branch = "main"
 
-# --- Project & Storage ---
-project      = "default"
-storage_pool = "default"
+# ============================================================================
+# Sécurité & Protection
+# ============================================================================
+# Protection contre suppression accidentelle (true/false)
+# true  = terraform destroy échouera (protection production)
+# false = terraform destroy fonctionnera (mode développement)
+security_protection_delete = false
 
-# --- Front VM (Alpine) ---
-# Fixed: 512MB RAM, 16GB disk
-# Variable: CPU cores
-front_cpu = 1
+# Autoriser la destruction manuelle des VMs via terraform
+allow_manual_destroy = true
 
-# --- Back VM (Ubuntu Cloud) ---
-# Fixed: 32GB disk
-# Variable: CPU cores and RAM
-back_cpu    = 1
-back_memory = "1GB"
-
-
+# ============================================================================
+# INSTRUCTIONS POUR GENERER VOS CLÉS SSH
+# ============================================================================
+# 
+# 1. Ouvrir un terminal (PowerShell, Bash, etc.)
+#
+# 2. Générer une paire de clés ED25519 :
+#    ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -C "ansible@deployment"
+#
+# 3. Afficher la clé PUBLIQUE (à mettre dans ansible_ssh_public_key) :
+#    cat ~/.ssh/id_ed25519.pub
+#    Exemple : ssh-ed25519 AAAAC3Nza... user@host
+#
+# 4. Afficher la clé PRIVÉE (à mettre dans ansible_ssh_private_key) :
+#    cat ~/.ssh/id_ed25519
+#    Copier le contenu entier (BEGIN à END)
+#
+# 5. Remplacer les valeurs dans ce fichier
+#
+# ============================================================================
