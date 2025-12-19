@@ -136,7 +136,7 @@ variable "ansible_ssh_public_key" {
 variable "github_repo_url" {
   description = "GitHub repository URL containing Ansible playbooks and inventory"
   type        = string
-  default     = "https://github.com/arkololo/ansible-wordpress.git"
+  default     = "https://github.com/arkololo/Terraform-TP1.git"
 }
 
 variable "github_repo_branch" {

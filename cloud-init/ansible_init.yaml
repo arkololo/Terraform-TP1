@@ -3,10 +3,9 @@
 # Actions automatiques au démarrage :
 # 1. Mettre à jour le système
 # 2. Installer openssh-server, git, ansible
-# 3. Générer clé SSH ED25519
-# 4. Ajouter la clé publique dans authorized_keys
-# 5. Cloner le repo GitHub avec playbooks
-# 6. Lancer automatiquement ansible-playbook vers VM Web
+# 3. Déployer la clé privée fournie pour accès SSH vers la VM Web
+# 4. Cloner le repo GitHub avec playbooks
+# 5. Lancer automatiquement ansible-playbook vers VM Web
 
 hostname: ansible
 fqdn: ansible.local
@@ -25,7 +24,7 @@ packages:
   - curl
   - wget
 
-# Créer l'utilisateur ubuntu avec clé SSH
+# Créer l'utilisateur ubuntu avec clé publique
 users:
   - name: ubuntu
     gecos: Ubuntu User
@@ -37,43 +36,42 @@ users:
     lock_passwd: true
     ssh_import_id: []
 
-# Configuration SSH
-ssh_genkeytypes:
-  - ed25519
-
-ssh_keys:
-  rsa_private: |
-    -----BEGIN OPENSSH PRIVATE KEY-----
-    b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-    QyNTUxOQAAACBijjQwTf0qGl4CTRYhM6mn4fiJmAe/66RPsjy+jaRd4gAAAIjJCgV6yQoF
-    egAAAAtzc2gtZWQyNTUxOQAAACBijjQwTf0qGl4CTRYhM6mn4fiJmAe/66RPsjy+jaRd4g
-    AAAEAK1YhQhQ2PSJY5NT+SFIQmbs7GPly2zEQq9fz4crgRXWKONDBN/SoaXgJNFiEzqafh
-    +ImYB7/rpE+yPL6NpF3iAAAAAAECAwQF
-    -----END OPENSSH PRIVATE KEY-----
-  rsa_public: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKONDBN/SoaXgJNFiEzqafh+ImYB7/rpE+yPL6NpF3i
-
 # Scripts d'exécution automatique
 runcmd:
   # 1. Attendre que le réseau soit stabilisé
   - sleep 10
 
-  # 2. Générer la clé SSH ED25519 pour l'utilisateur ubuntu
-  - ssh-keygen -t ed25519 -f /home/ubuntu/.ssh/id_ed25519 -N '' -q || true
-
-  # 3. Ajouter la clé publique dans authorized_keys (auto-connexion)
-  - cat /home/ubuntu/.ssh/id_ed25519.pub >> /home/ubuntu/.ssh/authorized_keys || true
-
-  # 4. Fixer les permissions SSH
-  - chown -R ubuntu:ubuntu /home/ubuntu/.ssh
+  # 2. Créer le répertoire .ssh si nécessaire
+  - mkdir -p /home/ubuntu/.ssh
+  - chown ubuntu:ubuntu /home/ubuntu/.ssh
   - chmod 700 /home/ubuntu/.ssh
-  - chmod 600 /home/ubuntu/.ssh/authorized_keys
+
+  # 3. Déployer la clé privée SSH (en échappant les retours à la ligne)
+  - |
+      cat > /home/ubuntu/.ssh/id_ed25519 <<'EOFKEY'
+      ${ansible_private_key}
+      EOFKEY
+  - chown ubuntu:ubuntu /home/ubuntu/.ssh/id_ed25519
   - chmod 600 /home/ubuntu/.ssh/id_ed25519
 
-  # 5. Cloner le repo GitHub avec playbooks
+  # 4. Déployer la clé publique SSH
+  - echo "${ansible_public_key}" > /home/ubuntu/.ssh/id_ed25519.pub
+  - chown ubuntu:ubuntu /home/ubuntu/.ssh/id_ed25519.pub
+  - chmod 644 /home/ubuntu/.ssh/id_ed25519.pub
+
+  # 5. Créer authorized_keys avec la clé publique
+  - echo "${authorized_keys}" > /home/ubuntu/.ssh/authorized_keys
+  - chown ubuntu:ubuntu /home/ubuntu/.ssh/authorized_keys
+  - chmod 600 /home/ubuntu/.ssh/authorized_keys
+
+  # 6. Activer et démarrer SSH (évite le service inactif)
+  - systemctl enable ssh
+  - systemctl restart ssh
+
+  # 7. Cloner le repo GitHub avec playbooks
   - sudo -u ubuntu git clone --branch ${github_repo_branch} ${github_repo_url} /home/ubuntu/ansible-repo || true
 
-  # 6. Configurer SSH pour la connexion vers Web VM (accepter clés inconnues)
-  - mkdir -p /home/ubuntu/.ssh
+  # 8. Configurer SSH pour la connexion vers Web VM (accepter clés inconnues)
   - echo "Host ${web_ip}" > /home/ubuntu/.ssh/config
   - echo "  HostName ${web_ip}" >> /home/ubuntu/.ssh/config
   - echo "  User debian" >> /home/ubuntu/.ssh/config
@@ -83,10 +81,10 @@ runcmd:
   - chown ubuntu:ubuntu /home/ubuntu/.ssh/config
   - chmod 600 /home/ubuntu/.ssh/config
 
-  # 7. Attendre que la VM Web soit accessible
+  # 9. Attendre que la VM Web soit accessible
   - sleep 30
 
-  # 8. Lancer ansible-playbook automatiquement
+  # 10. Lancer ansible-playbook automatiquement
   - sudo -u ubuntu /usr/bin/ansible-playbook /home/ubuntu/ansible-repo/playbook.yml -i /home/ubuntu/ansible-repo/inventory.ini 2>&1 | tee /tmp/ansible-playbook.log &
 
 # Logging

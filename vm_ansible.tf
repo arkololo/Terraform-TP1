@@ -15,10 +15,12 @@ locals {
   # 5. Lancer automatiquement ansible-playbook
 
   ansible_cloud_init = templatefile("${path.module}/cloud-init/ansible_init.yaml", {
-    web_ip               = var.web_ip
-    github_repo_url      = var.github_repo_url
-    github_repo_branch   = var.github_repo_branch
-    authorized_keys      = local.authorized_keys
+    web_ip              = var.web_ip
+    github_repo_url     = var.github_repo_url
+    github_repo_branch  = var.github_repo_branch
+    authorized_keys     = trimspace(var.ansible_ssh_public_key)
+    ansible_private_key = indent(6, trimspace(var.ansible_ssh_private_key))
+    ansible_public_key  = indent(6, trimspace(var.ansible_ssh_public_key))
   })
 }
 
