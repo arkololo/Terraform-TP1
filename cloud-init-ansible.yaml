@@ -8,37 +8,8 @@ packages:
 
 ssh_pwauth: false
 
-users:
-  - name: ubuntu
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    shell: /bin/bash
-    ssh_authorized_keys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKONDBN/SoaXgJNFiEzqafh+ImYB7/rpE+yPL6NpF3i
-
-write_files:
-  - path: /home/ubuntu/.ssh/id_ed25519
-    permissions: "0600"
-    owner: ubuntu:ubuntu
-    content: |
-      -----BEGIN OPENSSH PRIVATE KEY-----
-      b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
-      QyNTUxOQAAACBijjQwTf0qGl4CTRYhM6mn4fiJmAe/66RPsjy+jaRd4gAAAIjJCgV6yQoF
-      egAAAAtzc2gtZWQyNTUxOQAAACBijjQwTf0qGl4CTRYhM6mn4fiJmAe/66RPsjy+jaRd4g
-      AAAEAK1YhQhQ2PSJY5NT+SFIQmbs7GPly2zEQq9fz4crgRXWKONDBN/SoaXgJNFiEzqafh
-      +ImYB7/rpE+yPL6NpF3iAAAAAAECAwQF
-      -----END OPENSSH PRIVATE KEY-----
-  - path: /home/ubuntu/.ssh/id_ed25519.pub
-    permissions: "0644"
-    owner: ubuntu:ubuntu
-    content: |
-      ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGKONDBN/SoaXgJNFiEzqafh+ImYB7/rpE+yPL6NpF3i
-
 runcmd:
-  - mkdir -p /home/ubuntu/.ssh && chmod 700 /home/ubuntu/.ssh && chown -R ubuntu:ubuntu /home/ubuntu/.ssh
-  - chmod 600 /home/ubuntu/.ssh/id_ed25519 && chown ubuntu:ubuntu /home/ubuntu/.ssh/id_ed25519
-  - chmod 644 /home/ubuntu/.ssh/id_ed25519.pub && chown ubuntu:ubuntu /home/ubuntu/.ssh/id_ed25519.pub
   - systemctl enable ssh
   - systemctl restart ssh
-  - ansible --version || true
 
-final_message: "Ansible and SSH installed on Ubuntu."
+final_message: "Ansible and SSH installed on Ubuntu Ansible host."

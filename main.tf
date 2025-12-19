@@ -41,7 +41,7 @@ resource "incus_instance" "front" {
   remote   = "iaas"
   type     = "virtual-machine"
   project  = var.project
-  image    = "images:alpine/3.19"
+  image    = "images:alpine/3.20/cloud"
   profiles = ["default"]
 
   config = {
@@ -86,7 +86,6 @@ resource "incus_instance" "back" {
     "limits.cpu"    = tostring(var.back_cpu)
     "limits.memory" = var.back_memory
     "security.secureboot" = "false"
-    "user.user-data"            = file("${path.module}/cloud-init-ssh-debian.yaml")
   }
 
   device {
@@ -140,13 +139,7 @@ resource "incus_instance" "ansible" {
     "limits.cpu"          = "1"
     "limits.memory"       = "1GB"
     "security.secureboot" = "false"
-    "cloud-init.user-data"      = templatefile(
-      "${path.module}/cloud-init-ansible.yaml",
-      {
-        private_key = var.ansible_ssh_private_key,
-        public_key  = var.ansible_ssh_public_key
-      }
-    )
+    "cloud-init.user-data" = file("${path.module}/cloud-init-ansible.yaml")
   }
 
   device {
@@ -174,9 +167,7 @@ output "ansible_instance" {
   value = incus_instance.ansible.name
 }
 
-########################
-# ANSIBLE → FRONT KEY PUSH
-########################
+
  
 
 ########################
