@@ -16,25 +16,6 @@
   become_user: root
   gather_facts: yes
 
-  pre_tasks:
-    - name: Check if Docker is installed
-      command: which docker
-      register: docker_cmd
-      ignore_errors: true
-
-    - name: Set docker_present fact
-      set_fact:
-        docker_present: "{{ docker_cmd.rc == 0 }}"
-
-    - name: Check if Docker Compose plugin is available
-      command: docker compose version
-      register: docker_compose_cmd
-      ignore_errors: true
-
-    - name: Set docker_compose_present fact
-      set_fact:
-        docker_compose_present: "{{ docker_compose_cmd.rc == 0 }}"
-
   tasks:
     # ========================================================================
     # 1. Système & Packages de base
@@ -65,7 +46,6 @@
       apt_key:
         url: https://download.docker.com/linux/debian/gpg
         state: present
-      when: not docker_present | bool
       tags:
         - docker
 
@@ -73,7 +53,6 @@
       apt_repository:
         repo: "deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
         state: present
-      when: not docker_present | bool
       tags:
         - docker
 
@@ -81,8 +60,6 @@
       apt:
         name: docker-ce
         state: present
-        update_cache: yes
-      when: not docker_present | bool
       tags:
         - docker
 
@@ -103,7 +80,6 @@
         chmod +x /usr/local/bin/docker-compose
       args:
         creates: /usr/local/bin/docker-compose
-      when: not docker_compose_present | bool
       tags:
         - docker-compose
 
@@ -112,21 +88,18 @@
         src: /usr/local/bin/docker-compose
         dest: /usr/bin/docker-compose
         state: link
-      when: not docker_compose_present | bool
       tags:
         - docker-compose
 
     - name: Verify Docker Compose installation
       shell: docker-compose --version
       register: docker_compose_version
-      when: not docker_compose_present | bool
       tags:
         - docker-compose
 
     - name: Display Docker Compose version
       debug:
         msg: "Docker Compose version: {{ docker_compose_version.stdout }}"
-      when: not docker_compose_present | bool
       tags:
         - docker-compose
 
@@ -240,11 +213,7 @@
     - name: Start WordPress stack with Docker Compose
       shell: |
         cd {{ wordpress_root }}
-        if docker compose version >/dev/null 2>&1; then
-          docker compose up -d
-        else
-          docker-compose up -d
-        fi
+        docker-compose up -d
       register: docker_compose_result
       tags:
         - wordpress
@@ -256,12 +225,7 @@
         - wordpress
 
     - name: Wait for WordPress to be ready
-      shell: |
-        if docker compose version >/dev/null 2>&1; then
-          docker compose -f {{ wordpress_root }}/docker-compose.yml ps
-        else
-          docker-compose -f {{ wordpress_root }}/docker-compose.yml ps
-        fi
+      shell: docker-compose -f {{ wordpress_root }}/docker-compose.yml ps
       register: docker_ps_result
       until: docker_ps_result.stdout.find("Up") != -1
       retries: 20
